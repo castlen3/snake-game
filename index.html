@@ -242,81 +242,45 @@
             white-space: nowrap;
         }
 
-        /* ========== 手機方向鍵 ========== */
+        /* ========== 手機方向盤 (Joystick) ========== */
         #mobile-dpad {
             display: none;
             position: relative;
-            width: 200px;
-            height: 200px;
-            margin: 10px auto;
+            width: 160px;
+            height: 160px;
+            margin: 20px auto;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
         }
 
         .mobile #mobile-dpad {
             display: block;
         }
 
-        .dpad-btn {
+        #joystick-knob {
             position: absolute;
-            width: 62px;
-            height: 62px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #fff 0%, #ddd 100%);
             border-radius: 50%;
-            border: none;
-            background: rgba(255,255,255,0.18);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            color: #fff;
-            font-size: 1.6rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            touch-action: none;
-            transition: background 0.1s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .dpad-btn:active {
-            background: rgba(255,255,255,0.4);
-            transform: scale(0.92);
-        }
-
-        .dpad-up {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .dpad-up:active {
-            transform: translateX(-50%) scale(0.92);
-        }
-        .dpad-down {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .dpad-down:active {
-            transform: translateX(-50%) scale(0.92);
-        }
-        .dpad-left {
-            left: 0;
             top: 50%;
-            transform: translateY(-50%);
-        }
-        .dpad-left:active {
-            transform: translateY(-50%) scale(0.92);
-        }
-        .dpad-right {
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        .dpad-right:active {
-            transform: translateY(-50%) scale(0.92);
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: background 0.2s;
+            z-index: 2;
         }
 
-        /* 中央 placeholder */
+        #joystick-knob.active {
+            background: linear-gradient(135deg, #feca57 0%, #ff6b6b 100%);
+            box-shadow: 0 0 20px rgba(254, 195, 87, 0.6);
+        }
+
         .dpad-center {
             position: absolute;
             top: 50%;
@@ -327,6 +291,7 @@
             border-radius: 50%;
             background: rgba(255,255,255,0.06);
             pointer-events: none;
+            border: 1px dashed rgba(255,255,255,0.2);
         }
 
         /* 手機版最佳化：直向膠囊比例 */
@@ -363,13 +328,10 @@
         ⌨️ 方向鍵或 WASD 控制移動 | 🍎 吃蘋果得分 | 💀 別撞牆撞自己！
     </div>
 
-    <!-- 手機方向鍵 -->
+    <!-- 手機方向盤 (Joystick) -->
     <div id="mobile-dpad">
-        <button class="dpad-btn dpad-up" data-dir="up">⬆️</button>
-        <button class="dpad-btn dpad-left" data-dir="left">⬅️</button>
+        <div id="joystick-knob"></div>
         <div class="dpad-center"></div>
-        <button class="dpad-btn dpad-right" data-dir="right">➡️</button>
-        <button class="dpad-btn dpad-down" data-dir="down">⬇️</button>
     </div>
 
     <script>
@@ -955,61 +917,72 @@
             }
         }
 
-        // 綁定方向鍵事件
-        document.querySelectorAll('.dpad-btn').forEach(btn => {
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const dir = btn.dataset.dir;
-                if (!hasStarted || isGameOver) {
-                    resetGame();
-                    return;
+        // ========== 手機方向盤邏輯 (Joystick) ==========
+        const dpad = document.getElementById('mobile-dpad');
+        const knob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickCenterX = 0;
+        let joystickCenterY = 0;
+
+        function handleJoystickMove(clientX, clientY) {
+            if (!isJoystickActive) return;
+
+            const rect = dpad.getBoundingClientRect();
+            joystickCenterX = rect.left + rect.width / 2;
+            joystickCenterY = rect.top + rect.height / 2;
+
+            let deltaX = clientX - joystickCenterX;
+            let deltaY = clientY - joystickCenterY;
+
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxRadius = rect.width / 2;
+
+            if (distance > maxRadius) {
+                deltaX *= maxRadius / distance;
+                deltaY *= maxRadius / distance;
+            }
+
+            knob.style.left = `calc(50% + ${deltaX}px)`;
+            knob.style.top = `calc(50% + ${deltaY}px)`;
+            knob.style.transform = 'translate(-50%, -50%)';
+
+            // 判定方向 (角度判定)
+            if (distance > 20) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    setDirection(deltaX > 0 ? 'right' : 'left');
+                } else {
+                    setDirection(deltaY > 0 ? 'down' : 'up');
                 }
-                setDirection(dir);
-                vibrate(15);
-            });
-            btn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                const dir = btn.dataset.dir;
-                if (!hasStarted || isGameOver) {
-                    resetGame();
-                    return;
-                }
-                setDirection(dir);
-                vibrate(15);
-            });
+            }
+        }
+
+        dpad.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isJoystickActive = true;
+            knob.classList.add('active');
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+            if (!hasStarted || isGameOver) {
+                resetGame();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isJoystickActive) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleJoystickMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            isJoystickActive = false;
+            knob.classList.remove('active');
+            knob.style.left = '50%';
+            knob.style.top = '50%';
+            knob.style.transform = 'translate(-50%, -50%)';
         });
 
-        // ========== 手機觸控滑動 ==========
-        let touchStartX = 0, touchStartY = 0;
-        
-        document.addEventListener('touchstart', (e) => {
-            // 如果點在方向鍵上，不處理滑動
-            if (e.target.closest('#mobile-dpad')) return;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-        
-        document.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-        
-        document.addEventListener('touchend', (e) => {
-            if (e.target.closest('#mobile-dpad')) return;
-            if (!touchStartX || !touchStartY) return;
-            
-            const dx_touch = (e.changedTouches[0].clientX - touchStartX);
-            const dy_touch = (e.changedTouches[0].clientY - touchStartY);
-            const absDx = Math.abs(dx_touch);
-            const absDy = Math.abs(dy_touch);
-            
-            if (Math.max(absDx, absDy) < 20) return; // 太小視為點擊
-            
-            if (absDx > absDy) {
-                setDirection(dx_touch > 0 ? 'right' : 'left');
-            } else {
-                setDirection(dy_touch > 0 ? 'down' : 'up');
-            }
-        }, { passive: true });
+        // ========== 手機觸控滑動 (保留作為備用) ==========
 
         // ========== 手機適配初始化 ==========
         if (isMobile()) {
