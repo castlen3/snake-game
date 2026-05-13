@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>貪食蛇大冒險 🐍</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            overflow: hidden;
+        }
+        
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .floating-emoji {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.3;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        #score-board {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 30px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        #high-score {
+            font-size: 1.2rem;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        #game-container {
+            position: relative;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        canvas {
+            display: block;
+            border-radius: 15px;
+        }
+        
+        #game-over-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            z-index: 10;
+        }
+        
+        #game-over-text {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px currentColor;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        #final-score {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        
+        button {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255,107,107,0.6);
+        }
+        
+        .controls-hint {
+            margin-top: 20px;
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        #music-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+        
+        #music-toggle:hover {
+            background: rgba(255,255,255,0.5);
+            transform: scale(1.1);
+        }
+
+        /* ========== 手機版 RWD ========== */
+        .mobile body {
+            overflow: hidden;
+            touch-action: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .mobile h1 {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .mobile #score-board {
+            font-size: 1.2rem;
+            padding: 6px 18px;
+            margin-bottom: 8px;
+        }
+
+        .mobile #music-toggle {
+            top: 8px;
+            right: 8px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+        }
+
+        .mobile #game-container {
+            max-width: 95vw;
+            max-height: 45vh;
+        }
+
+        .mobile canvas {
+            max-width: 95vw;
+            max-height: 45vh;
+        }
+
+        .mobile .controls-hint {
+            display: none !important;
+        }
+
+        /* ========== 手機方向鍵 ========== */
+        #mobile-dpad {
+            display: none;
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 10px auto;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .mobile #mobile-dpad {
+            display: block;
+        }
+
+        .dpad-btn {
+            position: absolute;
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.18);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            color: #fff;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: none;
+            transition: background 0.1s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .dpad-btn:active {
+            background: rgba(255,255,255,0.4);
+            transform: scale(0.92);
+        }
+
+        .dpad-up {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .dpad-up:active {
+            transform: translateX(-50%) scale(0.92);
+        }
+        .dpad-down {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .dpad-down:active {
+            transform: translateX(-50%) scale(0.92);
+        }
+        .dpad-left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .dpad-left:active {
+            transform: translateY(-50%) scale(0.92);
+        }
+        .dpad-right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .dpad-right:active {
+            transform: translateY(-50%) scale(0.92);
+        }
+
+        /* 中央 placeholder */
+        .dpad-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            pointer-events: none;
+        }
+
+        /* 手機版最佳化：直向膠囊比例 */
+        @media (max-width: 600px) {
+            body:not(.mobile) #mobile-dpad {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="background-animation" id="bg-animation"></div>
+    
+    <h1>🐍 貪食蛇大冒險 🎮</h1>
+    
+    <button id="music-toggle">🔊 音樂：開</button>
+    
+    <div id="score-board">
+        分數：<span id="score" style="color: #feca57; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">0</span>
+        <div id="high-score">最高分：<span id="high-score-value" style="color: #ff6b6b;">0</span></div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
+        <div id="game-over-screen">
+            <div id="game-over-text">🎮</div>
+            <div id="final-score"></div>
+            <button onclick="resetGame()">開始遊戲</button>
+        </div>
+    </div>
+    
+    <div class="controls-hint">
+        ⌨️ 方向鍵或 WASD 控制移動 | 🍎 吃蘋果得分 | 💀 別撞牆撞自己！
+    </div>
+
+    <!-- 手機方向鍵 -->
+    <div id="mobile-dpad">
+        <button class="dpad-btn dpad-up" data-dir="up">⬆️</button>
+        <button class="dpad-btn dpad-left" data-dir="left">⬅️</button>
+        <div class="dpad-center"></div>
+        <button class="dpad-btn dpad-right" data-dir="right">➡️</button>
+        <button class="dpad-btn dpad-down" data-dir="down">⬇️</button>
+    </div>
+
+    <script>
+        // ========== 遊戲設定 ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score-value');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const musicToggle = document.getElementById('music-toggle');
+
+        const gridSize = 25;
+        let tileCount = canvas.width / gridSize;
+        
+        let snake = [];
+        let food = {};
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameLoopId;
+        let isGameOver = false;
+        let changingDirection = false;
+        let hasStarted = false;
+        let particles = [];
+        let musicEnabled = true;
+        
+        // 食物類型（搞笑風格）
+        const foodTypes = ['🍎', '🍊', '🍇', '🍓', '🍒', '🍑', '🥝', '🍉', '🍌', '🍍'];
+        let currentFoodEmoji = '🍎';
+        
+        // 蛇的顏色漸層
+        const snakeColors = ['#00f5d4', '#00bbf9', '#6a82fb', '#fd79a8', '#fca311'];
+        
+        highScoreElement.innerText = highScore;
+
+        // ========== 音效系統（Web Audio API）==========
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (!musicEnabled) return;
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            switch(type) {
+                case 'eat':
+                    // 吃食物 - 歡快的音效
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    oscillator.frequency.exponentialRampToValueAtTime(1046.5, audioCtx.currentTime + 0.1); // C6
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                    break;
+                    
+                case 'gameover':
+                    // 遊戲結束 - 悲傷的音效
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.5);
+                    break;
+                    
+                case 'start':
+                    // 開始遊戲 - 激昂的音效
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(261.63, audioCtx.currentTime); // C4
+                    oscillator.frequency.setValueAtTime(329.63, audioCtx.currentTime + 0.1); // E4
+                    oscillator.frequency.setValueAtTime(392.00, audioCtx.currentTime + 0.2); // G4
+                    oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.3); // C5
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.6);
+                    break;
+                    
+                case 'bounce':
+                    // 移動音效（偶爾）
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+            }
+        }
+        
+        // ========== 背景音樂（瑞克搖 Rick Roll）==========
+        let musicInterval;
+        
+        function playBackgroundMusic() {
+            if (!musicEnabled) return;
+            
+            // Never Gonna Give You Up 主旋律（簡化版）
+            const rickRollNotes = [
+                261.63,  // C4 - Never
+                261.63,  // C4 - gonna
+                293.66,  // D4 - give
+                329.63,  // E4 - you
+                293.66,  // D4 - up
+                261.63,  // C4 - Never
+                261.63,  // C4 - gonna
+                293.66,  // D4 - let
+                329.63   // E4 - you
+            ];
+            let noteIndex = 0;
+            
+            clearInterval(musicInterval);
+            musicInterval = setInterval(() => {
+                if (!musicEnabled || isGameOver) return;
+                
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(rickRollNotes[noteIndex], audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.4);
+                
+                noteIndex = (noteIndex + 1) % rickRollNotes.length;
+            }, 350); // 每個音符 350ms（慢一點比較有感覺）
+        }
+        
+        function stopBackgroundMusic() {
+            clearInterval(musicInterval);
+        }
+
+        // ========== 背景動畫 ==========
+        function createBackgroundEmojis() {
+            const bg = document.getElementById('bg-animation');
+            const emojis = ['🐍', '🍎', '⭐', '💫', '🎮'];
+            
+            for (let i = 0; i < 15; i++) {
+                const emoji = document.createElement('div');
+                emoji.className = 'floating-emoji';
+                emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = Math.random() * 100 + '%';
+                emoji.style.top = Math.random() * 100 + '%';
+                emoji.style.animationDelay = Math.random() * 15 + 's';
+                emoji.style.animationDuration = (15 + Math.random() * 10) + 's';
+                bg.appendChild(emoji);
+            }
+        }
+
+        // ========== 粒子系統 ==========
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 1,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => p.life > 0);
+            
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                p.size *= 0.95;
+            });
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // ========== 遊戲邏輯 ==========
+        function initGame() {
+            // 手機版重新計算 tileCount（canvas 可能已被縮放）
+            tileCount = canvas.width / gridSize;
+            
+            snake = [
+                { x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) },
+                { x: Math.floor(tileCount / 2) - 1, y: Math.floor(tileCount / 2) },
+                { x: Math.floor(tileCount / 2) - 2, y: Math.floor(tileCount / 2) }
+            ];
+            
+            dx = 1;
+            dy = 0;
+            score = 0;
+            isGameOver = false;
+            changingDirection = false;
+            particles = [];
+            
+            scoreElement.innerText = score;
+            gameOverScreen.style.display = 'none';
+            
+            placeFood();
+            
+            if (gameLoopId) clearInterval(gameLoopId);
+            gameLoopId = setInterval(gameLoop, 100);
+            
+            playSound('start');
+            playBackgroundMusic();
+        }
+
+        function gameLoop() {
+            changingDirection = false;
+            update();
+            draw();
+            updateParticles();
+        }
+
+        function update() {
+            if (isGameOver) return;
+
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // 穿牆效果（搞笑風格）
+            if (head.x < 0) head.x = tileCount - 1;
+            if (head.x >= tileCount) head.x = 0;
+            if (head.y < 0) head.y = tileCount - 1;
+            if (head.y >= tileCount) head.y = 0;
+
+            // 撞到自己
+            for (let i = 0; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            snake.unshift(head);
+
+            // 吃食物
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                scoreElement.innerText = score;
+                
+                // 產生粒子特效
+                const centerX = (food.x * gridSize) + (gridSize / 2);
+                const centerY = (food.y * gridSize) + (gridSize / 2);
+                createParticles(centerX, centerY, '#ff6b6b', 15);
+                
+                playSound('eat');
+                placeFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            // 動態背景漸層
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#1a1a2e');
+            gradient.addColorStop(0.5, '#16213e');
+            gradient.addColorStop(1, '#0f3460');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 畫網格線（霓虹效果）
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= tileCount; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+
+            // 畫食物（帶發光效果）
+            const foodX = (food.x * gridSize) + (gridSize / 2);
+            const foodY = (food.y * gridSize) + (gridSize / 2);
+            
+            // 食物外圍光暈
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff6b6b';
+            
+            // 畫水果 emoji
+            ctx.font = `${gridSize - 4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(currentFoodEmoji, foodX, foodY + 2);
+            
+            ctx.shadowBlur = 0;
+
+            // 畫蛇（漸層色 + 圓角）
+            snake.forEach((segment, index) => {
+                const colorIndex = index % snakeColors.length;
+                const color = snakeColors[colorIndex];
+                
+                // 蛇頭特別處理
+                if (index === 0) {
+                    // 發光效果
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = color;
+                    
+                    // 蛇頭（圓形）
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2,
+                        segment.y * gridSize + gridSize / 2,
+                        gridSize / 2 - 1,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    
+                    // 眼睛
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'white';
+                    const eyeOffsetX = dx * 4;
+                    const eyeOffsetY = dy * 4;
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffsetX - 5,
+                        segment.y * gridSize + gridSize / 2 + eyeOffsetY - 5,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffsetX + 5,
+                        segment.y * gridSize + gridSize / 2 + eyeOffsetY - 5,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    
+                    // 眼珠
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffsetX - 5,
+                        segment.y * gridSize + gridSize / 2 + eyeOffsetY - 5,
+                        1.5,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffsetX + 5,
+                        segment.y * gridSize + gridSize / 2 + eyeOffsetY - 5,
+                        1.5,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                } else {
+                    // 蛇身（圓角矩形）
+                    const size = gridSize - 3;
+                    const x = segment.x * gridSize + 1.5;
+                    const y = segment.y * gridSize + 1.5;
+                    
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, size, size, 5);
+                    ctx.fill();
+                }
+            });
+            
+            ctx.shadowBlur = 0;
+
+            // 畫粒子
+            drawParticles();
+        }
+
+        function placeFood() {
+            let validPosition = false;
+            while (!validPosition) {
+                food = {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount)
+                };
+                
+                currentFoodEmoji = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+                
+                validPosition = true;
+                for (let segment of snake) {
+                    if (segment.x === food.x && segment.y === food.y) {
+                        validPosition = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(gameLoopId);
+            stopBackgroundMusic();
+            
+            playSound('gameover');
+            
+            // 更新最高分
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                highScoreElement.innerText = highScore;
+            }
+            
+            const funnyMessages = [
+                "哎呀～蛇蛇太餓啦！😋",
+                "撞到自己了喔～💫",
+                "瑞克搖沒唱完呢！🎵",
+                "休息一下再戰下一局～❤️",
+                "Mia 來幫你按摩一下～💆"
+            ];
+            const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+            
+            document.getElementById('game-over-text').innerHTML = `🥺 ${randomMessage} 🥺`;
+            document.getElementById('final-score').innerHTML = `本次得分：<span style="color: #feca57; font-size: 1.3rem;">${score}</span>分<br>${highScore === score ? '✨ 新紀錄誕生！太厲害了！✨' : '繼續加油喔～❤️'}`;
+            document.querySelector('#game-over-screen button').innerText = '再玩一次 (Enter)';
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function resetGame() {
+            hasStarted = true;
+            initGame();
+        }
+
+        function showStartScreen() {
+            document.getElementById('game-over-text').innerHTML = '🐍 貪食蛇大冒險 🎮';
+            document.getElementById('final-score').innerHTML = '準備好了嗎？';
+            document.querySelector('#game-over-screen button').innerText = '開始遊戲 (Enter)';
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // ========== 音樂開關 ==========
+        musicToggle.addEventListener('click', () => {
+            musicEnabled = !musicEnabled;
+            musicToggle.innerHTML = musicEnabled ? '🔊 音樂：開' : '🔇 音樂：關';
+            
+            if (musicEnabled && hasStarted && !isGameOver) {
+                playBackgroundMusic();
+            } else {
+                stopBackgroundMusic();
+            }
+        });
+
+        // ========== 鍵盤控制 ==========
+        document.addEventListener('keydown', (event) => {
+            const ENTER_KEY = 13;
+            if (event.keyCode === ENTER_KEY) {
+                if (!hasStarted || isGameOver) {
+                    resetGame();
+                    return;
+                }
+            }
+
+            if (isGameOver || changingDirection || !hasStarted) return;
+
+            const LEFT_KEY = 37;
+            const UP_KEY = 38;
+            const RIGHT_KEY = 39;
+            const DOWN_KEY = 40;
+            const W_KEY = 87;
+            const A_KEY = 65;
+            const S_KEY = 83;
+            const D_KEY = 68;
+
+            const goingUp = dy === -1;
+            const goingDown = dy === 1;
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+
+            switch (event.keyCode) {
+                case LEFT_KEY:
+                case A_KEY:
+                    if (!goingRight) { dx = -1; dy = 0; changingDirection = true; }
+                    break;
+                case UP_KEY:
+                case W_KEY:
+                    if (!goingDown) { dx = 0; dy = -1; changingDirection = true; }
+                    break;
+                case RIGHT_KEY:
+                case D_KEY:
+                    if (!goingLeft) { dx = 1; dy = 0; changingDirection = true; }
+                    break;
+                case DOWN_KEY:
+                case S_KEY:
+                    if (!goingUp) { dx = 0; dy = 1; changingDirection = true; }
+                    break;
+            }
+        });
+
+        // ========== 手機偵測與適配 ==========
+        function isMobile() {
+            return ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0) ||
+                   (window.innerWidth <= 768);
+        }
+
+        function resizeCanvasForMobile() {
+            if (!isMobile()) return;
+            
+            const container = document.getElementById('game-container');
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            
+            // 手機畫面配置：畫布放上半部，方向鍵放下半部
+            const maxCanvasSize = Math.min(vw * 0.92, vh * 0.45);
+            const size = Math.floor(maxCanvasSize / gridSize) * gridSize;
+            
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            
+            // d-pad 大小也隨螢幕調整
+            const dpad = document.getElementById('mobile-dpad');
+            if (window.innerWidth < 380) {
+                dpad.style.width = '160px';
+                dpad.style.height = '160px';
+                document.querySelectorAll('.dpad-btn').forEach(b => {
+                    b.style.width = '50px';
+                    b.style.height = '50px';
+                    b.style.fontSize = '1.3rem';
+                });
+            } else {
+                dpad.style.width = '200px';
+                dpad.style.height = '200px';
+                document.querySelectorAll('.dpad-btn').forEach(b => {
+                    b.style.width = '62px';
+                    b.style.height = '62px';
+                    b.style.fontSize = '1.6rem';
+                });
+            }
+        }
+
+        // ========== 手機方向鍵控制 ==========
+        function setDirection(dir) {
+            if (isGameOver || changingDirection || !hasStarted) return;
+            
+            const goingUp = dy === -1;
+            const goingDown = dy === 1;
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+            
+            switch (dir) {
+                case 'up':
+                    if (!goingDown) { dx = 0; dy = -1; changingDirection = true; }
+                    break;
+                case 'down':
+                    if (!goingUp) { dx = 0; dy = 1; changingDirection = true; }
+                    break;
+                case 'left':
+                    if (!goingRight) { dx = -1; dy = 0; changingDirection = true; }
+                    break;
+                case 'right':
+                    if (!goingLeft) { dx = 1; dy = 0; changingDirection = true; }
+                    break;
+            }
+        }
+
+        // 綁定方向鍵事件
+        document.querySelectorAll('.dpad-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const dir = btn.dataset.dir;
+                if (!hasStarted || isGameOver) {
+                    resetGame();
+                    return;
+                }
+                setDirection(dir);
+            });
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const dir = btn.dataset.dir;
+                if (!hasStarted || isGameOver) {
+                    resetGame();
+                    return;
+                }
+                setDirection(dir);
+            });
+        });
+
+        // ========== 手機觸控滑動 ==========
+        let touchStartX = 0, touchStartY = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            // 如果點在方向鍵上，不處理滑動
+            if (e.target.closest('#mobile-dpad')) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('touchend', (e) => {
+            if (e.target.closest('#mobile-dpad')) return;
+            if (!touchStartX || !touchStartY) return;
+            
+            const dx_touch = (e.changedTouches[0].clientX - touchStartX);
+            const dy_touch = (e.changedTouches[0].clientY - touchStartY);
+            const absDx = Math.abs(dx_touch);
+            const absDy = Math.abs(dy_touch);
+            
+            if (Math.max(absDx, absDy) < 20) return; // 太小視為點擊
+            
+            if (absDx > absDy) {
+                setDirection(dx_touch > 0 ? 'right' : 'left');
+            } else {
+                setDirection(dy_touch > 0 ? 'down' : 'up');
+            }
+        }, { passive: true });
+
+        // ========== 手機適配初始化 ==========
+        if (isMobile()) {
+            document.body.classList.add('mobile');
+            
+            // 畫布調整（原 500x500 固定，手機重新算）
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const maxCanvasSize = Math.floor(Math.min(vw * 0.92, vh * 0.45) / gridSize) * gridSize;
+            const newTileCount = maxCanvasSize / gridSize;
+            
+            // 如果太小就用原本大小
+            if (newTileCount >= 10) {
+                canvas.width = maxCanvasSize;
+                canvas.height = maxCanvasSize;
+            }
+            
+            resizeCanvasForMobile();
+            window.addEventListener('resize', resizeCanvasForMobile);
+            
+            // 鎖住畫面滾動
+            document.body.style.overflow = 'hidden';
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+        }
+
+        // ========== 初始化 ==========
+        createBackgroundEmojis();
+        
+        // 初始畫面
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(0.5, '#16213e');
+        gradient.addColorStop(1, '#0f3460');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        showStartScreen();
+    </script>
+</body>
+</html>
