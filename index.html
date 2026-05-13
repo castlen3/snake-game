@@ -188,17 +188,50 @@
         }
 
         .mobile #game-container {
-            max-width: 95vw;
-            max-height: 45vh;
+            display: inline-block;
         }
 
         .mobile canvas {
-            max-width: 95vw;
-            max-height: 45vh;
         }
 
         .mobile .controls-hint {
             display: none !important;
+        }
+
+        .mobile #game-over-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            z-index: 10;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .mobile #game-over-text {
+            font-size: 1.4rem;
+            text-align: center;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .mobile #final-score {
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .mobile #game-over-screen button {
+            padding: 10px 24px;
+            font-size: 1rem;
         }
 
         /* ========== 手機方向鍵 ========== */
