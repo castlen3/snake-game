@@ -755,6 +755,7 @@
             stopBackgroundMusic();
             
             playSound('gameover');
+            vibrate([100, 50, 100]);
             
             // 更新最高分
             if (score > highScore) {
@@ -890,6 +891,13 @@
             }
         }
 
+        // ========== 手機震動回饋 ==========
+        function vibrate(pattern) {
+            if (isMobile() && navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
         // ========== 手機方向鍵控制 ==========
         function setDirection(dir) {
             if (isGameOver || changingDirection || !hasStarted) return;
@@ -925,6 +933,7 @@
                     return;
                 }
                 setDirection(dir);
+                vibrate(15);
             });
             btn.addEventListener('mousedown', (e) => {
                 e.preventDefault();
@@ -934,6 +943,7 @@
                     return;
                 }
                 setDirection(dir);
+                vibrate(15);
             });
         });
 
