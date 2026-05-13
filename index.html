@@ -912,6 +912,12 @@
         function setDirection(dir) {
             if (isGameOver || !hasStarted) return;
             
+            // 優化：如果新指令與隊列最後一個指令相同，則不重複加入
+            // 這能防止 touchmove 產生大量重複指令導致的 Lag 感
+            if (inputQueue.length > 0 && inputQueue[inputQueue.length - 1] === dir) {
+                return;
+            }
+
             if (inputQueue.length < 3) {
                 inputQueue.push(dir);
             }
