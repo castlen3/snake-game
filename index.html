@@ -281,6 +281,38 @@
             box-shadow: 0 0 20px rgba(254, 195, 87, 0.6);
         }
 
+        .dpad-btn {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: #fff;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: none;
+            transition: all 0.2s;
+            z-index: 1;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .dpad-btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.9);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .dpad-up { top: 10px; left: 50%; transform: translateX(-50%); }
+        .dpad-down { bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .dpad-left { left: 10px; top: 50%; transform: translateY(-50%); }
+        .dpad-right { right: 10px; top: 50%; transform: translateY(-50%); }
+
         .dpad-center {
             position: absolute;
             top: 50%;
@@ -331,7 +363,11 @@
     <!-- 手機方向盤 (Joystick) -->
     <div id="mobile-dpad">
         <div id="joystick-knob"></div>
+        <button class="dpad-btn dpad-up" data-dir="up">⬆️</button>
+        <button class="dpad-btn dpad-left" data-dir="left">⬅️</button>
         <div class="dpad-center"></div>
+        <button class="dpad-btn dpad-right" data-dir="right">➡️</button>
+        <button class="dpad-btn dpad-down" data-dir="down">⬇️</button>
     </div>
 
     <script>
@@ -986,6 +1022,32 @@
             knob.style.left = '50%';
             knob.style.top = '50%';
             knob.style.transform = 'translate(-50%, -50%)';
+        });
+
+        // 綁定按鈕事件 (並兼容緩衝隊列與震動)
+        document.querySelectorAll('.dpad-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // 防止觸發搖桿滑動
+                const dir = btn.dataset.dir;
+                if (!hasStarted || isGameOver) {
+                    resetGame();
+                    return;
+                }
+                setDirection(dir);
+                vibrate(15);
+            });
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const dir = btn.dataset.dir;
+                if (!hasStarted || isGameOver) {
+                    resetGame();
+                    return;
+                }
+                setDirection(dir);
+                vibrate(15);
+            });
         });
 
         // ========== 手機觸控滑動 (保留作為備用) ==========
